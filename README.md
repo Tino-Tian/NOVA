@@ -1,244 +1,117 @@
 <div align="center">
 
-<img src="public/app-icon.png" alt="NOVA Logo" width="120" />
+<img src="public/app-icon.png" alt="NOVA Logo" width="128" />
 
 # NOVA
 
-### A Beautiful Desktop Client for Claude Code
+### Claude Code 桌面客户端 · 极夜黑 × 冰蓝
 
-[![Version](https://img.shields.io/github/v/release/Tino-Tian/NOVA?style=flat-square&color=blue)](https://github.com/Tino-Tian/NOVA/releases)
-[![License](https://img.shields.io/badge/license-Apache%202.0-green?style=flat-square)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=flat-square)](#installation)
-[![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131?style=flat-square&logo=tauri&logoColor=white)](https://tauri.app)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
+[![Version](https://img.shields.io/github/v/release/Tino-Tian/NOVA?style=for-the-badge&color=0891b2)](https://github.com/Tino-Tian/NOVA/releases)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green?style=for-the-badge)](LICENSE)
+[![Platform](https://img.shields.io/badge/macOS%20%7C%20Windows%20%7C%20Linux-cyan?style=for-the-badge)]()
+[![Tauri 2](https://img.shields.io/badge/Tauri-2.0-FFC131?style=for-the-badge&logo=tauri)](https://tauri.app)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
 
-**NOVA** wraps the powerful [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) in a polished desktop interface — bring your own API key, connect any provider, and get a native coding experience with file exploration, session management, and structured permission control.
+[English](README.md) · [中文](README_zh.md) · [下载](https://github.com/Tino-Tian/NOVA/releases) · [功能](#-功能) · [截图](#-截图)
 
-[**Download**](https://github.com/Tino-Tian/NOVA/releases) · [**Features**](#features) · [**Screenshots**](#screenshots)
+</div>
 
 ---
 
-**[English](README.md)** | **[中文](README_zh.md)**
+## 这是什么？
 
-</div>
+**NOVA** 把 [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) 变成了一个真正好用的桌面应用。
 
-## Why NOVA?
+不用记命令、不用配终端、不用折腾环境。打开 NOVA，选一个 API 服务商，开始写代码、改文件、搜问题。就像用 ChatGPT 桌面版一样简单，但背后是 Claude Code 的完整能力。
 
-| | | | |
-|:---:|:---:|:---:|:---:|
-| 🔑 **Bring Your Own API** | 🇨🇳 **China-Ready** | 🛡️ **SDK Control Protocol** | 🎨 **Beautiful & Native** |
-| 6 preset providers + custom endpoints. One-click config import/export. | Gitee mirror for updates, pre-configured Chinese API providers (DeepSeek, Zhipu GLM, Qwen, Kimi, MiniMax). | Structured permission approval — 4 work modes (code / ask / plan / bypass) with typed allow/deny over stdin. | Tauri 2 native desktop experience. Multiple themes × light/dark mode. |
-
-<div align="center">
-
-![Main Interface](screenshots/main-interface.png?v=2)
-
-</div>
-
-## Installation
-
-### Prerequisites
-
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) — NOVA can auto-detect, install, and authenticate it for you on first launch
-
-### macOS
-
-Download the latest `.dmg` from [Releases](https://github.com/Tino-Tian/NOVA/releases), open it, and drag **NOVA** to your Applications folder.
-
-Available for both Apple Silicon (arm64) and Intel (x86_64). The app is code-signed and notarized — no extra steps needed.
-
-### Windows
-
-Download the latest `.msi` or `.exe` installer from [Releases](https://github.com/Tino-Tian/NOVA/releases) and run it. Requires Windows 10 or later.
-
-### Linux
-
-Download the `.AppImage`, `.deb`, or `.rpm` package from [Releases](https://github.com/Tino-Tian/NOVA/releases). Requires WebKit2GTK.
-
-> **China users:** If GitHub downloads are slow, grab releases from the [Gitee mirror](https://gitee.com/Tino-Tian/NOVA/releases). The app also checks Gitee for updates when GitHub is unreachable.
-
-## Getting Started
-
-1. **Open NOVA** — if the Claude Code CLI is not installed, the setup wizard guides you through installation and login, no terminal required
-2. **Select a project folder** from the welcome screen or input bar
-3. **Start chatting** — the Claude CLI session runs seamlessly in the background
-4. **Configure your API** (optional) — open Settings → API Provider to add third-party keys or import a config
-
-## Features
-
-### Third-Party API Providers
-
-Use Claude through any compatible API endpoint — not just Anthropic's official API.
-
-- **6 preset providers** in a visual 2×3 grid: Anthropic, DeepSeek, Zhipu GLM, Qwen Coder, Kimi k2, MiniMax
-- **Custom endpoints** with Anthropic or OpenAI-compatible format
-- **One-click JSON import** to share configs across machines
-- **Quick connection test** with response time display (e.g. `326ms`)
-- **Per-card export** for easy backup
-
-### China-Ready
-
-NOVA is designed to work well behind the Great Firewall:
-
-- **Gitee update mirror** — when GitHub is unreachable, auto-update falls back to Gitee
-- **Chinese API presets** — DeepSeek, Zhipu GLM, Qwen Coder, Kimi k2, MiniMax are pre-configured with correct endpoints
-- **Proxy auto-detection** — inherits system proxy environment variables on macOS
-- **Full Chinese UI** — switch to Chinese from Settings at any time
-
-### SDK Control Protocol
-
-NOVA v0.8.0 uses Claude CLI's native control protocol for permission handling:
-
-- Permission requests flow as structured JSON through stdout
-- Responses are typed `allow` / `deny` messages via stdin
-- Switch between **code**, **ask**, **plan**, and **bypass** modes at runtime
-- Change model on-the-fly without restarting the session
-
-### Streaming Chat
-
-Real-time conversation with Claude Code using NDJSON streaming. The UI shows distinct phases:
-
-- **Thinking** — spinner animation while Claude reasons
-- **Writing** — blue indicator as Claude composes its response
-- **Tool execution** — animated display of file edits, shell commands, and more
-
-### Session Management
-
-All Claude Code sessions are persisted and fully manageable:
-
-- **Pin** sessions to the top of each project group
-- **Archive** sessions to hide them from the default view
-- **Batch operations** — multi-select for bulk delete or archive
-- **Date separators** — Today / Yesterday / This Week / Earlier
-- **Smart collapse** — only the active project group auto-expands
-- **AI title generation** — automatic short title after the first reply
-- **Undo delete** — 5-second recovery window for accidental deletions
-- **Search** with a running-sessions-only filter
-- **Export** to Markdown or JSON, rename, resume any session
-
-### File Explorer & Editor
-
-Browse your project tree with full file management:
-
-- **SVG file icons** for 20+ file types with color coding
-- **Change markers** on files modified by Claude
-- **Create new files and folders** via right-click context menu
-- **Flat search** with relative path context
-- **Built-in CodeMirror editor** with syntax highlighting for 12+ languages (Python, TypeScript, Rust, Go, Java, C++, SQL, Markdown, JSON, YAML, HTML, CSS, XML)
-- **Double-click** to open in VS Code
-
-### Checkpoints & Rewind
-
-File restoration uses Claude CLI's native checkpoint system:
-
-- Restore **code**, **conversation**, or **both** independently
-- Powered by `--replay-user-messages` and CLI file checkpointing
-- Integrated restore button in the conversation timeline
-
-### Slash Commands & Command Palette
-
-- Full Claude Code slash command support with autocomplete popover
-- Shows built-in commands, project commands, and skills
-- **Command Palette** (`Cmd+K` / `Ctrl+K`) for quick access to new chats, panel toggles, theme switching, and settings
-
-### Agent Activity
-
-Monitor Claude's sub-agents in real-time — see which agents are spawning, thinking, running tools, or completed.
-
-### Skills & MCP
-
-Manage Claude Code skills (edit, enable/disable, right-click context menu) and MCP server connections directly from the UI.
-
-### Customization
-
-- **Themes** — multiple accent colors with light, dark, and system-following modes
-- **Languages** — full Chinese and English support, switchable from Settings
-- **Font size** — adjustable with keyboard shortcuts
-- **Thinking depth** — 5-level thinking depth control
-
-## Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Cmd+K` | Open command palette |
-| `Cmd+N` | New chat |
-| `Cmd+B` | Toggle sidebar |
-| `Cmd+.` | Toggle file panel |
-| `Cmd+,` | Open settings |
-| `Cmd+Enter` | Send message |
-| `Cmd++` / `Cmd+-` | Adjust font size |
-| `Cmd+0` | Reset font size |
-| `Escape` | Close overlay / cancel |
-
-> On Windows/Linux, replace `Cmd` with `Ctrl`.
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Desktop framework | [Tauri 2](https://tauri.app) |
-| Frontend | [React 19](https://react.dev) + TypeScript 5.8 |
-| Styling | [Tailwind CSS 4](https://tailwindcss.com) |
-| State management | [Zustand 5](https://zustand.docs.pmnd.rs) (10 stores) |
-| Code editor | [CodeMirror 6](https://codemirror.net) |
-| Bundler | [Vite 7](https://vite.dev) |
-| Backend | Rust (tokio, reqwest, serde, notify) |
-| Package manager | pnpm |
-
-## Screenshots
-
-**Main Interface** — Three-panel layout with sidebar, chat, and file explorer
-![Main Interface](screenshots/main-interface.png?v=2)
-
-**Streaming Chat** — Real-time thinking, writing, and tool execution
-![Streaming Chat](screenshots/streaming-chat.png?v=2)
-
-**Session Management** — Pin, archive, date groups, batch operations
-![Session Management](screenshots/文件管理.png?v=2)
-
-**File Explorer** — SVG icons, change markers, flat search
-![File Explorer](screenshots/file-explorer.png?v=2)
-
-**File Editing** — Built-in CodeMirror editor with syntax highlighting
-![File Editing](screenshots/file-editing.png?v=2)
-
-**Plan Mode** — SDK permission approval cards
-![Plan Mode](screenshots/plan-mode.png?v=2)
-
-**Agent Activity** — Monitor sub-agent tasks in real-time
-![Agent Activity](screenshots/Agents.png?v=2)
-
-**Skills Management** — Right-click context menu for skills
-![Skills](screenshots/skills.png?v=2)
-
-**HTML Preview** — Live preview of HTML files
-![HTML Preview](screenshots/html-preview.png?v=2)
-
-**Settings** — Four-tab layout with theme preview cards
-![Settings](screenshots/settings.png?v=2)
-
-## Contributing
-
-Contributions are welcome! Please open an issue or pull request.
-
-- Fork the repo and create a feature branch: `git checkout -b feat/my-feature`
-- Commit with conventional format: `feat: add new feature`
-- Push and open a Pull Request
-
-## License
-
-This project is licensed under the **Apache License 2.0** — see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Anthropic](https://anthropic.com) for Claude Code CLI
-- [Tauri](https://tauri.app) for the native desktop framework
-- [React](https://react.dev) and the open-source ecosystem
+> 🔑 自带6大国内API服务商 · 🇨🇳 国内网络直连 · 🎨 极夜黑冰蓝设计 · 🖥️ 三平台覆盖
 
 ---
 
+## ✨ 功能
+
+| 功能 | 说明 |
+|:---|:---|
+| 🔑 **6大API预设** | 智谱 GLM · DeepSeek · 通义千问 · Kimi · MiniMax · 自定义端点，一键切换 |
+| 🇨🇳 **国内优化** | Gitee 镜像下载 + 国内 API 直连 + 自动更新兼容墙内网络 |
+| 🛡️ **权限控制** | 4种工作模式（代码/询问/计划/绕过），AI 的每一步操作都由你审批 |
+| 📁 **文件管理** | 内置文件浏览器，预览、编辑、拖拽上传 |
+| 💬 **多会话** | 同时开多个对话，分组管理，一键导出 |
+| 🎨 **极夜黑 × 冰蓝** | 深色护眼 + 冰蓝高级感，直角硬朗风格 |
+| 🔄 **自动更新** | GitHub + Gitee 双通道，新版本一键升级 |
+| 🖥️ **原生性能** | Tauri 2 框架，比 Electron 轻 10 倍，内存占用极低 |
+
+---
+
+## 🖼️ 截图
+
 <div align="center">
+<img src="screenshots/main-interface.png" alt="主界面" width="90%" />
 
-**If you find NOVA useful, please consider giving it a ⭐!**
+*主界面 — 极夜黑背景 + 冰蓝点缀*
 
+<details>
+<summary>📸 更多截图</summary>
+<br/>
+<img src="screenshots/streaming-chat.png" alt="实时对话" width="90%" />
+<img src="screenshots/file-explorer.png" alt="文件管理" width="90%" />
+<img src="screenshots/settings.png" alt="设置面板" width="90%" />
+<img src="screenshots/plan-mode.png" alt="计划模式" width="90%" />
+</details>
 </div>
+
+---
+
+## 📦 下载安装
+
+### 🍎 macOS
+
+1. 从 [Releases](https://github.com/Tino-Tian/NOVA/releases) 下载 `NOVA_版本号_aarch64.dmg`
+2. 双击打开，把 **NOVA** 拖入 `应用程序` 文件夹
+3. 首次打开如提示"无法验证"：**系统设置 → 隐私与安全性 → 仍要打开**
+
+### 🪟 Windows
+
+1. 从 [Releases](https://github.com/Tino-Tian/NOVA/releases) 下载 `NOVA_版本号_x64-setup.exe`
+2. 双击运行安装向导
+3. 需要 Windows 10 或更高版本
+
+### 🐧 Linux
+
+下载 `.AppImage`、`.deb` 或 `.rpm` 安装包，需要 `WebKit2GTK`。
+
+> 💡 **国内下载慢？** → [Gitee 镜像](https://gitee.com/Tino-Tian/NOVA/releases)
+
+---
+
+## 🚀 三步开始
+
+1. **打开 NOVA** — 首次启动自动引导配置
+2. **选服务商** — 输入 API Key 或选预设（智谱/DeepSeek等）
+3. **开始对话** — 没有 Claude Code CLI？NOVA 自动帮你装
+
+---
+
+## 🛠 技术栈
+
+| 层 | 技术 |
+|:---|:---|
+| 桌面框架 | [Tauri 2](https://tauri.app) |
+| 前端 | React 19 + TypeScript |
+| 样式 | Tailwind CSS 4 |
+| 构建 | Vite 7 |
+| 后端 | Rust |
+
+---
+
+## ⭐ 投一颗星
+
+觉得好用的话，点个 Star 支持一下作者 ⭐
+
+每一颗星都是继续开发的动力。
+
+---
+
+## 📄 协议
+
+[Apache 2.0](LICENSE)
