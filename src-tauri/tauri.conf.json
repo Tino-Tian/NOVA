@@ -1,0 +1,72 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "NOVA",
+  "version": "2.2.1",
+  "identifier": "com.nova.claude-code",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "NOVA",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": false,
+    "resources": {
+      "tools/cleanup-helper": "tools/cleanup-helper",
+      "resources/en.lproj": "en.lproj",
+      "resources/zh-Hans.lproj": "zh-Hans.lproj"
+    },
+    "macOS": {
+      "entitlements": "entitlements.plist",
+      "minimumSystemVersion": "10.13"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "displayLanguageSelector": true,
+        "languages": ["English", "SimpChinese"],
+        "startMenuFolder": "NOVA"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZBRENERjc5RTkyQTUzNTEKUldSUlV5cnBlZC9jK2hJR2t0L1RSb0gwS0V0QlQ4NkFsU1ZUeTIrc3d3Zk9oUWtVdlpIR2d5RmkK",
+      "endpoints": [
+        "https://herear.cn:8443/releases/tokenicode/latest.json",
+        "https://github.com/Tino-Tian/NOVA/releases/latest/download/latest.json",
+        "https://gitee.com/Tino-Tian/NOVA/raw/main/latest-gitee.json"
+      ]
+    }
+  }
+}

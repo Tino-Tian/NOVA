@@ -1,0 +1,12 @@
+{
+  "productName": "NOVA Beta",
+  "version": "2.2.1",
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://raw.githubusercontent.com/Tino-Tian/NOVA/beta/latest-beta.json",
+        "https://gitee.com/Tino-Tian/NOVA/raw/beta/latest-beta-gitee.json"
+      ]
+    }
+  }
+}
