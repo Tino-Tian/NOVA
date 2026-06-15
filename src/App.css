@@ -311,3 +311,75 @@ input, textarea, [contenteditable="true"],
   height: 0;
 }
 .tiptap { min-height: 24px; max-height: 50vh; overflow-y: auto; outline: none; line-height: 1.5; }
+
+/* ================================================================
+   羊皮书主题 (Parchment) — 暖色纸质阅读感
+   色值来源: F1 临时色板（DESIGN_SPEC.md 未产出）
+   ================================================================ */
+.parchment {
+  --color-bg-primary: #F5F0E8;
+  --color-bg-secondary: #EDE4D3;
+  --color-bg-tertiary: #E8DDC8;
+  --color-bg-chat: #F5F0E8;
+  --color-bg-sidebar: #EDE4D3;
+  --color-bg-input: #EBE2CF;
+  --color-bg-user-msg: #EDE4D3;
+  --color-bg-assistant-msg: #F2ECDF;
+  --color-bg-tool: #EBE2CF;
+  --color-bg-thinking: #EFE7D8;
+  --color-bg-card: #F5F0E8;
+  --color-bg-nav-active: rgba(139, 115, 85, 0.12);
+
+  --color-text-primary: #3C2E1F;
+  --color-text-secondary: #6B5D4F;
+  --color-text-tertiary: #8B7355;
+  --color-text-inverse: #F5F0E8;
+  --color-text-muted: #8B7355;
+
+  --color-border: #D4C5A9;
+  --color-border-subtle: #D4C5A9;
+  --color-border-focus: #8B7355;
+
+  --color-accent: #8B7355;
+  --color-accent-light: rgba(139, 115, 85, 0.15);
+  --color-accent-hover: #6B5D4F;
+  --color-accent-glow: rgba(139, 115, 85, 0.08);
+  --color-success: #5a8a4a;
+  --color-error: #c44;
+  --color-warning: #b8860b;
+
+  --color-gradient-start: #8B7355;
+  --color-gradient-mid: #7a6548;
+  --color-gradient-end: #6B5D4F;
+
+  --color-syntax-keyword: #7a5a3a;
+  --color-syntax-string: #5a7a3a;
+  --color-syntax-number: #8a6a3a;
+  --color-syntax-function: #6a5a4a;
+  --color-syntax-comment: #9a8a7a;
+  --color-syntax-type: #5a7a3a;
+  --color-syntax-builtin: #7a5a3a;
+  --color-syntax-delete: #c44;
+  --color-syntax-meta: #8a7a6a;
+
+  --color-icon-slash: #8B7355;
+
+  --shadow-sm: 0 0.5px 1px rgba(0,0,0,0.06);
+  --shadow-md: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-lg: 0 2px 8px rgba(0,0,0,0.10);
+  --shadow-glow: 0 0 2px rgba(139, 115, 85, 0.2);
+}
+
+.parchment body {
+  font-family: 'Menlo', 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.parchment body *,
+.parchment body *::before,
+.parchment body *::after {
+  border-radius: 0 !important;
+}
+
+.parchment .bg-accent {
+  text-shadow: 0 0.5px 1px rgba(0,0,0,0.08);
+}

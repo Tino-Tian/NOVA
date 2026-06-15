@@ -5,8 +5,9 @@ import { settingsEvents } from '../lib/settingsEvents';
 // --- Types ---
 
 export type Theme = 'light' | 'dark' | 'system';
-export type ColorTheme = 'black' | 'blue' | 'orange' | 'green';
+export type ColorTheme = 'black' | 'blue' | 'orange' | 'green' | 'parchment';
 export type SecondaryPanelTab = 'files' | 'skills';
+export type BackgroundType = 'color' | 'image' | 'video';
 export type ModelId =
   | 'claude-opus-4-8'
   | 'claude-opus-4-8-1m'
@@ -87,6 +88,14 @@ interface SettingsState {
   /** Whether to show dotfiles (hidden files) in the file tree */
   showHiddenFiles: boolean;
 
+  // --- 窗口背景设置 ---
+  bgType: BackgroundType;
+  bgColor: string;
+  bgImagePath: string;
+  bgVideoPath: string;
+  bgBlur: number;
+  bgOpacity: number;
+
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
   setColorTheme: (colorTheme: ColorTheme) => void;
@@ -117,6 +126,12 @@ interface SettingsState {
   setUserAvatarUrl: (url: string) => void;
   setUserDisplayName: (name: string) => void;
   toggleHiddenFiles: () => void;
+  setBgType: (type: BackgroundType) => void;
+  setBgColor: (color: string) => void;
+  setBgImagePath: (path: string) => void;
+  setBgVideoPath: (path: string) => void;
+  setBgBlur: (blur: number) => void;
+  setBgOpacity: (opacity: number) => void;
 }
 
 // --- Theme cycle order ---
@@ -159,6 +174,14 @@ export const useSettingsStore = create<SettingsState>()(
       userAvatarUrl: '',
       userDisplayName: '',
       showHiddenFiles: false,
+
+      // 窗口背景默认值
+      bgType: 'color' as BackgroundType,
+      bgColor: '#0a0a0a',
+      bgImagePath: '',
+      bgVideoPath: '',
+      bgBlur: 0,
+      bgOpacity: 100,
 
       toggleTheme: () =>
         set((state) => ({ theme: nextTheme(state.theme) })),
@@ -259,6 +282,13 @@ export const useSettingsStore = create<SettingsState>()(
         set(() => ({ userDisplayName: name.slice(0, 20) })),
       toggleHiddenFiles: () =>
         set((state) => ({ showHiddenFiles: !state.showHiddenFiles })),
+
+      setBgType: (bgType) => set(() => ({ bgType })),
+      setBgColor: (bgColor) => set(() => ({ bgColor })),
+      setBgImagePath: (bgImagePath) => set(() => ({ bgImagePath })),
+      setBgVideoPath: (bgVideoPath) => set(() => ({ bgVideoPath })),
+      setBgBlur: (bgBlur) => set(() => ({ bgBlur: Math.max(0, Math.min(20, bgBlur)) })),
+      setBgOpacity: (bgOpacity) => set(() => ({ bgOpacity: Math.max(10, Math.min(100, bgOpacity)) })),
     }),
     {
       name: 'tokenicode-settings',
@@ -344,6 +374,12 @@ export const useSettingsStore = create<SettingsState>()(
         userAvatarUrl: state.userAvatarUrl,
         userDisplayName: state.userDisplayName,
         showHiddenFiles: state.showHiddenFiles,
+        bgType: state.bgType,
+        bgColor: state.bgColor,
+        bgImagePath: state.bgImagePath,
+        bgVideoPath: state.bgVideoPath,
+        bgBlur: state.bgBlur,
+        bgOpacity: state.bgOpacity,
       }),
     },
   ),

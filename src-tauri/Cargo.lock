@@ -2488,6 +2488,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "nova"
+version = "2.2.1"
+dependencies = [
+ "base64 0.22.1",
+ "bytes",
+ "cocoa",
+ "dirs",
+ "flate2",
+ "futures-util",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "libc",
+ "notify",
+ "objc",
+ "rand 0.8.5",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "tar",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-mcp",
+ "tauri-plugin-opener",
+ "tauri-plugin-process",
+ "tauri-plugin-shell",
+ "tauri-plugin-updater",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "trash",
+ "uuid",
+ "zip 2.4.2",
+]
+
+[[package]]
 name = "num-conv"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4845,45 +4884,6 @@ checksum = "42d3e9c45c09de15d06dd8acf5f4e0e399e85927b7f00711024eb7ae10fa4869"
 dependencies = [
  "displaydoc",
  "zerovec",
-]
-
-[[package]]
-name = "tokenicode"
-version = "2.2.1"
-dependencies = [
- "base64 0.22.1",
- "bytes",
- "cocoa",
- "dirs",
- "flate2",
- "futures-util",
- "http-body-util",
- "hyper",
- "hyper-util",
- "libc",
- "notify",
- "objc",
- "rand 0.8.5",
- "reqwest 0.12.28",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "tar",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-mcp",
- "tauri-plugin-opener",
- "tauri-plugin-process",
- "tauri-plugin-shell",
- "tauri-plugin-updater",
- "tempfile",
- "tokio",
- "tokio-stream",
- "trash",
- "uuid",
- "zip 2.4.2",
 ]
 
 [[package]]

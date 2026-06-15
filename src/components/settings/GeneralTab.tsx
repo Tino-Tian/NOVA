@@ -32,6 +32,12 @@ const COLOR_THEMES: { id: ColorTheme; labelKey: string; preview: string; preview
     preview: '#57A64B',
     previewDark: '#6DBF62',
   },
+  {
+    id: 'parchment',
+    labelKey: 'settings.parchment',
+    preview: '#D4C5A9',
+    previewDark: '#C4B599',
+  },
 ];
 
 /* Mini app preview — simplified chat interface thumbnail */
@@ -188,7 +194,7 @@ export function GeneralTab() {
       {/* Theme Color — single row of 4 */}
       <div>
         <h3 className="text-[13px] font-medium text-text-primary mb-3">{t('settings.colorTheme')}</h3>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-5 gap-3">
           {COLOR_THEMES.map((ct) => (
             <button
               key={ct.id}

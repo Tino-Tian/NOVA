@@ -94,9 +94,10 @@ struct WatcherManager {
     watchers: Arc<TokioMutex<HashMap<String, notify::RecommendedWatcher>>>,
 }
 
-/// Shared app data directory name — all editions (TOKENICODE / TCAlpha) use the same
+/// Shared app data directory name — all editions (NOVA) use the same
 /// directory so they share a single CLI installation and settings.
-const APP_DATA_DIR_NAME: &str = "com.tinyzhuang.tokenicode";
+/// Backward-compat: old data at com.tinyzhuang.tokenicode is auto-migrated.
+const APP_DATA_DIR_NAME: &str = "com.nova.claude-code";
 
 /// GCS bucket for Claude Code releases.
 const CLI_GCS_BASE: &str = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases";
@@ -137,7 +138,7 @@ fn get_local_git_bash() -> Option<String> {
 /// Returns the path to bash.exe if found.
 #[cfg(target_os = "windows")]
 pub(crate) fn find_git_bash() -> Option<String> {
-    // 1. Check app-local PortableGit first (auto-installed by TOKENICODE)
+    // 1. Check app-local PortableGit first (auto-installed by NOVA)
     if let Some(local) = get_local_git_bash() {
         return Some(local);
     }
@@ -325,7 +326,7 @@ fn system_proxy_url() -> Option<String> {
 
 /// Probe common local proxy ports and return the first reachable one.
 /// Re-probes every call (fast: ~100ms worst case) so proxy tools started after
-/// TOKENICODE are still detected. Covers Clash, Surge, common SOCKS.
+/// NOVA are still detected. Covers Clash, Surge, common SOCKS.
 fn probe_local_proxy() -> Option<String> {
     let ports: &[(u16, &str)] = &[
         (7890, "http"),   // Clash default
@@ -710,19 +711,33 @@ pub(crate) fn build_enriched_path() -> String {
 
 // --- Credential storage (TK-303) ---
 
-/// Directory for TOKENICODE app data (may be wiped by NSIS installer on Windows)
+/// Directory for NOVA app data (may be wiped by NSIS installer on Windows)
+/// Falls back to old TOKENICODE directory if it exists (backward compat).
 fn app_data_dir() -> Result<std::path::PathBuf, String> {
-    dirs::data_local_dir()
+    let new_dir = dirs::data_local_dir()
         .map(|d| d.join(APP_DATA_DIR_NAME))
-        .ok_or_else(|| "Cannot determine app data directory".to_string())
+        .ok_or_else(|| "Cannot determine app data directory".to_string())?;
+    // Backward compat: if old TOKENICODE dir exists but new doesn't, use old
+    let old_dir = dirs::data_local_dir()
+        .map(|d| d.join("com.tinyzhuang.tokenicode"));
+    if !new_dir.exists() && old_dir.as_ref().map_or(false, |d| d.exists()) {
+        return old_dir.ok_or_else(|| "Cannot determine app data directory".to_string());
+    }
+    Ok(new_dir)
 }
 
 /// Safe directory in user's home — survives Windows NSIS updates.
-/// Uses ~/.tokenicode/ which already stores tracked_sessions.txt.
+/// Uses ~/.nova/ for new installs, falls back to ~/.tokenicode/ for backward compat.
 fn safe_data_dir() -> Result<std::path::PathBuf, String> {
-    dirs::home_dir()
-        .map(|d| d.join(".tokenicode"))
-        .ok_or_else(|| "Cannot determine home directory".to_string())
+    let home = dirs::home_dir()
+        .ok_or_else(|| "Cannot determine home directory".to_string())?;
+    let new_dir = home.join(".nova");
+    // Backward compat: if old ~/.tokenicode/ exists but new doesn't, use old
+    let old_dir = home.join(".tokenicode");
+    if !new_dir.exists() && old_dir.exists() {
+        return Ok(old_dir);
+    }
+    Ok(new_dir)
 }
 
 // ================================================================
@@ -760,7 +775,7 @@ struct ProvidersFile {
     providers: Vec<ApiProvider>,
 }
 
-const PARTIAL_MESSAGES_OVERRIDE_ENV: &str = "TOKENICODE_INCLUDE_PARTIAL_MESSAGES";
+const PARTIAL_MESSAGES_OVERRIDE_ENV: &str = "NOVA_INCLUDE_PARTIAL_MESSAGES";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ProviderRuntimeCapabilities {
@@ -1071,7 +1086,7 @@ async fn test_provider_connection(
 /// text/thinking stream for providers that do support Anthropic-compatible
 /// partial messages. Keep risky native-only env vars native-only, but default
 /// Anthropic-format API providers to the same partial-message stream path as
-/// native Claude. Providers can opt out with TOKENICODE_INCLUDE_PARTIAL_MESSAGES=false.
+/// native Claude. Providers can opt out with NOVA_INCLUDE_PARTIAL_MESSAGES=false.
 fn resolve_provider_env(provider_id: Option<&str>) -> Result<ProviderEnvResolution, String> {
     let Some(pid) = provider_id else {
         // No provider → assume native Anthropic (Claude Desktop / CCswitch).
@@ -1098,7 +1113,7 @@ fn resolve_provider_env(provider_id: Option<&str>) -> Result<ProviderEnvResoluti
     macro_rules! log_proxy {
         ($($arg:tt)*) => {{
             let msg = format!($($arg)*);
-            let full = format!("[TOKENICODE] {}", msg);
+            let full = format!("[NOVA] {}", msg);
             eprintln!("{}", full);
             if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/nova_proxy.log") {
                 use std::io::Write;
@@ -1210,7 +1225,7 @@ fn resolve_provider_env(provider_id: Option<&str>) -> Result<ProviderEnvResoluti
     // HOT-FIX (v0.10.5): strip inherited OAuth / host-managed env vars when
     // using a third-party provider, WITHOUT the v0.10.3 side effects.
     //
-    // Background: the parent process (Her/TOKENICODE) inherits CCswitch's
+    // Background: the parent process (NOVA) inherits CCswitch's
     // ANTHROPIC_AUTH_TOKEN and Claude Desktop's CLAUDE_CODE_OAUTH_TOKEN /
     // CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST from its own environment.
     // tokio::process::Command inherits parent env by default, so the CLI
@@ -1475,7 +1490,7 @@ fn find_session_jsonl(session_id: &str) -> Option<std::path::PathBuf> {
     // Reject non-UUID session IDs to prevent path traversal (e.g. "../../../etc/passwd")
     if uuid::Uuid::parse_str(session_id).is_err() {
         eprintln!(
-            "[TOKENICODE] find_session_jsonl: rejecting non-UUID session_id: {}",
+            "[NOVA] find_session_jsonl: rejecting non-UUID session_id: {}",
             session_id
         );
         return None;
@@ -1516,7 +1531,7 @@ fn strip_thinking_blocks_from_session(session_id: &str) -> Result<usize, String>
         .ok_or_else(|| format!("Session JSONL not found for id: {}", session_id))?;
 
     eprintln!(
-        "[TOKENICODE] strip_thinking_blocks: processing {:?}",
+        "[NOVA] strip_thinking_blocks: processing {:?}",
         jsonl_path
     );
 
@@ -1562,7 +1577,7 @@ fn strip_thinking_blocks_from_session(session_id: &str) -> Result<usize, String>
         let backup_path = jsonl_path.with_extension("jsonl.bak");
         if let Err(e) = std::fs::copy(&jsonl_path, &backup_path) {
             eprintln!(
-                "[TOKENICODE] strip_thinking_blocks: backup failed ({}) — proceeding anyway",
+                "[NOVA] strip_thinking_blocks: backup failed ({}) — proceeding anyway",
                 e
             );
         }
@@ -1613,12 +1628,12 @@ fn strip_thinking_blocks_from_session(session_id: &str) -> Result<usize, String>
         }
 
         eprintln!(
-            "[TOKENICODE] strip_thinking_blocks: stripped {} thinking blocks from {:?}",
+            "[NOVA] strip_thinking_blocks: stripped {} thinking blocks from {:?}",
             total_stripped, jsonl_path
         );
     } else {
         eprintln!(
-            "[TOKENICODE] strip_thinking_blocks: no thinking blocks found in {:?}",
+            "[NOVA] strip_thinking_blocks: no thinking blocks found in {:?}",
             jsonl_path
         );
     }
@@ -1657,7 +1672,7 @@ fn strip_thinking_from_value(value: &mut serde_json::Value) -> Option<usize> {
 /// CLI's `--strict-mcp-config` doesn't strip the user's configured servers.
 ///
 /// Reads `~/.claude.json`, extracts the `mcpServers` object, and writes
-/// `{"mcpServers": {...}}` into `~/.tokenicode/mcp-session-<stdin_id>.json`.
+/// `{"mcpServers": {...}}` into `~/.nova/mcp-session-<stdin_id>.json`.
 /// Returns `None` when there are no servers to carry over (or on I/O error).
 fn build_mcp_scratch_config(stdin_id: &str) -> Option<std::path::PathBuf> {
     let home = dirs::home_dir()?;
@@ -1684,7 +1699,7 @@ fn build_mcp_scratch_config(stdin_id: &str) -> Option<std::path::PathBuf> {
         _ => return None,
     }
 
-    let dir = home.join(".tokenicode");
+    let dir = home.join(".nova");
     if std::fs::create_dir_all(&dir).is_err() {
         return None;
     }
@@ -1710,11 +1725,11 @@ fn safe_stdin_for_path(id: &str) -> String {
 }
 
 /// Remove the per-session MCP scratch file written by `build_mcp_scratch_config`.
-/// Called after the CLI process exits so `~/.tokenicode/` doesn't accumulate
+/// Called after the CLI process exits so `~/.nova/` doesn't accumulate
 /// stale files across sessions.
 fn cleanup_mcp_scratch_config(stdin_id: &str) {
     if let Some(home) = dirs::home_dir() {
-        let path = home.join(".tokenicode").join(format!(
+        let path = home.join(".nova").join(format!(
             "mcp-session-{}.json",
             safe_stdin_for_path(stdin_id)
         ));
@@ -1768,14 +1783,14 @@ async fn start_claude_session(
     // servers from ~/.claude.json (they'd slow cold start by 20-30 seconds).
     // BUT users also need their explicitly-configured MCP servers available
     // inside the session. Solution: write the mcpServers block from
-    // ~/.claude.json into a scratch file at ~/.tokenicode/mcp-session-<id>.json
+    // ~/.claude.json into a scratch file at ~/.nova/mcp-session-<id>.json
     // and pass it via --mcp-config. Cleaned up on process exit.
     let mcp_scratch_path = build_mcp_scratch_config(&session_id);
     if let Some(ref scratch) = mcp_scratch_path {
         args.push("--mcp-config".to_string());
         args.push(scratch.to_string_lossy().to_string());
         eprintln!(
-            "[TOKENICODE] MCP scratch config for {}: {:?}",
+            "[NOVA] MCP scratch config for {}: {:?}",
             session_id, scratch
         );
     }
@@ -1789,8 +1804,8 @@ async fn start_claude_session(
     if params.model_switch.unwrap_or(false) {
         if let Some(ref resume_id) = params.resume_session_id {
             match strip_thinking_blocks_from_session(resume_id) {
-                Ok(n) => eprintln!("[TOKENICODE] model_switch: stripped {} thinking blocks before resume", n),
-                Err(e) => eprintln!("[TOKENICODE] model_switch: thinking-block strip failed ({}), attempting resume anyway", e),
+                Ok(n) => eprintln!("[NOVA] model_switch: stripped {} thinking blocks before resume", n),
+                Err(e) => eprintln!("[NOVA] model_switch: thinking-block strip failed ({}), attempting resume anyway", e),
             }
         }
     }
@@ -1857,12 +1872,12 @@ async fn start_claude_session(
             args.remove(idx);
         }
         eprintln!(
-            "[TOKENICODE] partial streaming disabled for provider {:?} (unsupported/unknown capability)",
+            "[NOVA] partial streaming disabled for provider {:?} (unsupported/unknown capability)",
             params.provider_id
         );
     } else if !provider_caps.is_native_anthropic {
         eprintln!(
-            "[TOKENICODE] partial streaming enabled for provider {:?}",
+            "[NOVA] partial streaming enabled for provider {:?}",
             params.provider_id
         );
     }
@@ -1935,7 +1950,7 @@ async fn start_claude_session(
                 "1000000".to_string(),
             );
             eprintln!(
-                "[TOKENICODE] Set CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000 for model {}",
+                "[NOVA] Set CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000 for model {}",
                 model_name
             );
         }
@@ -2098,7 +2113,7 @@ async fn start_claude_session(
                 .current_dir(&params.cwd)
                 .env("PATH", &enriched_path)
                 // Clear CLAUDECODE env var so the CLI doesn't refuse to start
-                // when TOKENICODE itself is launched from within a Claude Code session.
+                // when NOVA itself is launched from within a Claude Code session.
                 .env_remove("CLAUDECODE");
             // Clear inherited ANTHROPIC_* env vars that conflict with our overrides
             for key in &inherited_keys_to_remove {
@@ -2188,16 +2203,16 @@ async fn start_claude_session(
 
     let pid = child.id().unwrap_or(0);
     eprintln!(
-        "[TOKENICODE] CLI spawned: pid={}, bin={}, permission_mode={}",
+        "[NOVA] CLI spawned: pid={}, bin={}, permission_mode={}",
         pid, claude_bin, permission_mode
     );
-    eprintln!("[TOKENICODE] args: {:?}", &args);
-    eprintln!("[TOKENICODE] PATH: {}", &enriched_path);
+    eprintln!("[NOVA] args: {:?}", &args);
+    eprintln!("[NOVA] PATH: {}", &enriched_path);
     eprintln!(
-        "[TOKENICODE] resolved_env: {:?}",
+        "[NOVA] resolved_env: {:?}",
         redacted_env_for_log(&resolved_env)
     );
-    eprintln!("[TOKENICODE] cwd: {}", &params.cwd);
+    eprintln!("[NOVA] cwd: {}", &params.cwd);
 
     // Capture stdin and store in StdinManager for sending follow-up messages
     let stdin = child.stdin.take().ok_or("Failed to capture stdin")?;
@@ -2230,15 +2245,15 @@ async fn start_claude_session(
             tokio::select! {
                 status = child.wait() => {
                     eprintln!(
-                        "[TOKENICODE] child naturally exited for {}: code={:?} (stdout reader will emit process_exit)",
+                        "[NOVA] child naturally exited for {}: code={:?} (stdout reader will emit process_exit)",
                         waiter_sid,
                         status.as_ref().ok().and_then(|s| s.code())
                     );
                 }
                 _ = kill_rx => {
-                    eprintln!("[TOKENICODE] kill signal received for {} — killing child", waiter_sid);
+                    eprintln!("[NOVA] kill signal received for {} — killing child", waiter_sid);
                     if let Err(e) = child.start_kill() {
-                        eprintln!("[TOKENICODE] start_kill failed for {}: {}", waiter_sid, e);
+                        eprintln!("[NOVA] start_kill failed for {}: {}", waiter_sid, e);
                     }
                     // Wait for child to actually die, then stdout reader will
                     // see EOF and do the ProcessExit + cleanup.
@@ -2261,6 +2276,20 @@ async fn start_claude_session(
             },
         )
         .await;
+
+    // Emit a readiness event so the frontend can transition from "starting agent"
+    // to "agent ready" state, even if the CLI takes a while to produce its first
+    // stdout line (e.g. when downloading deps on first launch).
+    let ready_event = format!("claude:ready:{}", sid);
+    let _ = emit_to_frontend(
+        &app,
+        &ready_event,
+        serde_json::json!({
+            "type": "session_ready",
+            "session_id": sid,
+            "pid": pid,
+        }),
+    );
 
     // Spawn stdout reader — streams NDJSON to frontend, intercepts control_request
     let app_clone = app.clone();
@@ -2290,7 +2319,7 @@ async fn start_claude_session(
                 Ok(None) => break, // normal EOF
                 Err(e) => {
                     eprintln!(
-                        "[TOKENICODE:CRITICAL] stdout read error after {} lines: {}",
+                        "[NOVA:CRITICAL] stdout read error after {} lines: {}",
                         line_count, e
                     );
                     break;
@@ -2315,7 +2344,7 @@ async fn start_claude_session(
                 };
                 let preview = &line[..end];
                 eprintln!(
-                    "[TOKENICODE:stdout] #{} @{}ms type={} preview={}",
+                    "[NOVA:stdout] #{} @{}ms type={} preview={}",
                     line_count,
                     elapsed,
                     serde_json::from_str::<Value>(&line)
@@ -2415,13 +2444,13 @@ async fn start_claude_session(
                                 .map(String::from);
 
                             eprintln!(
-                                "[TOKENICODE] permission request: tool={} request_id={} parent_tool_use_id={:?} agent_id={:?}",
+                                "[NOVA] permission request: tool={} request_id={} parent_tool_use_id={:?} agent_id={:?}",
                                 tool_name, request_id, parent_tool_use_id, agent_id
                             );
 
                             // Emit as a special stream message (reuses the working stream channel)
                             let perm_payload = serde_json::json!({
-                                "type": "tokenicode_permission_request",
+                                "type": "nova_permission_request",
                                 "request_id": request_id,
                                 "tool_name": tool_name,
                                 "input": input,
@@ -2434,7 +2463,7 @@ async fn start_claude_session(
                             continue; // Don't forward to stream as normal msg
                         }
                         "hook_callback" => {
-                            // Auto-allow hook callbacks (TOKENICODE doesn't manage hooks)
+                            // Auto-allow hook callbacks (NOVA doesn't manage hooks)
                             let auto_resp = serde_json::json!({
                                 "type": "control_response",
                                 "response": {
@@ -2449,7 +2478,7 @@ async fn start_claude_session(
                         "oauth_token_refresh" => {
                             // Deny oauth_token_refresh — allowing it makes CLI refresh to
                             // an Anthropic OAuth token that overrides the provider's API key.
-                            eprintln!("[TOKENICODE] oauth_token_refresh: denying to prevent OAuth override (request_id={})", request_id);
+                            eprintln!("[NOVA] oauth_token_refresh: denying to prevent OAuth override (request_id={})", request_id);
                             let deny_resp = serde_json::json!({
                                 "type": "control_response",
                                 "response": {
@@ -2463,13 +2492,13 @@ async fn start_claude_session(
                         }
                         other => {
                             // Unknown control request subtype — deny by default (P0-4 fix)
-                            eprintln!("[TOKENICODE] control_request/{}: denying unknown subtype (request_id={})", other, request_id);
+                            eprintln!("[NOVA] control_request/{}: denying unknown subtype (request_id={})", other, request_id);
                             let deny_resp = serde_json::json!({
                                 "type": "control_response",
                                 "response": {
                                     "subtype": "success",
                                     "request_id": request_id,
-                                    "response": { "behavior": "deny", "message": format!("Unknown permission type '{}' denied by TOKENICODE", other) }
+                                    "response": { "behavior": "deny", "message": format!("Unknown permission type '{}' denied by NOVA", other) }
                                 }
                             });
                             let _ = stdin_clone.send(&sid_clone, &deny_resp.to_string()).await;
@@ -2478,7 +2507,7 @@ async fn start_claude_session(
                     }
                 } else {
                     eprintln!(
-                        "[TOKENICODE] control_request missing 'request' field: {}",
+                        "[NOVA] control_request missing 'request' field: {}",
                         &line[..line.len().min(200)]
                     );
                     // Auto-allow to avoid blocking CLI
@@ -2525,7 +2554,7 @@ async fn start_claude_session(
                 // WebView is unresponsive for a sustained period.
                 if emit_fail_count == 1 || emit_fail_count % 10 == 0 {
                     eprintln!(
-                        "[TOKENICODE] emit_to_frontend failed (#{emit_fail_count}): {e} — continuing (watchdog will recover user session if needed)"
+                        "[NOVA] emit_to_frontend failed (#{emit_fail_count}): {e} — continuing (watchdog will recover user session if needed)"
                     );
                 }
                 // DO NOT break. Previously we broke after 10 failures, but
@@ -2538,7 +2567,7 @@ async fn start_claude_session(
             } else {
                 if emit_fail_count > 0 {
                     eprintln!(
-                        "[TOKENICODE] emit_to_frontend recovered after {} failures",
+                        "[NOVA] emit_to_frontend recovered after {} failures",
                         emit_fail_count
                     );
                 }
@@ -2552,7 +2581,7 @@ async fn start_claude_session(
         // The child waiter task only provides a kill proxy; it does NOT
         // emit process_exit, to avoid racing with stdout drain.
         eprintln!(
-            "[TOKENICODE] stdout reader reached EOF for {} after {} lines",
+            "[NOVA] stdout reader reached EOF for {} after {} lines",
             sid_clone, line_count
         );
         // Emit process_exit on the stream channel (primary detection)
@@ -2775,10 +2804,10 @@ async fn list_active_processes(state: State<'_, ProcessManager>) -> Result<Vec<S
     Ok(state.active_ids().await)
 }
 
-/// Path to the file tracking TOKENICODE-managed session IDs
+/// Path to the file tracking NOVA-managed session IDs
 fn tracked_sessions_path() -> std::path::PathBuf {
     let home = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
-    home.join(".tokenicode").join("tracked_sessions.txt")
+    home.join(".nova").join("tracked_sessions.txt")
 }
 
 /// Load the set of tracked session IDs.
@@ -2798,7 +2827,7 @@ fn load_tracked_sessions() -> std::collections::HashSet<String> {
     }
 
     // Fallback: if tracking file is missing/empty, rebuild from disk.
-    // Use session_names.json (tokenicode_session_names.json) as a filter to avoid
+    // Use session_names.json (nova_session_names.json) as a filter to avoid
     // importing Claude Code CLI or Her sessions. Only if session_names is also
     // missing do we fall back to importing all sessions (better than losing data).
     if set.is_empty() {
@@ -2864,7 +2893,7 @@ fn load_tracked_sessions() -> std::collections::HashSet<String> {
                     "all (no filter)"
                 };
                 eprintln!(
-                    "[TOKENICODE] Rebuilt tracked_sessions.txt: {} sessions ({})",
+                    "[NOVA] Rebuilt tracked_sessions.txt: {} sessions ({})",
                     set.len(),
                     mode
                 );
@@ -2875,7 +2904,7 @@ fn load_tracked_sessions() -> std::collections::HashSet<String> {
     set
 }
 
-/// Register a CLI session ID as managed by TOKENICODE
+/// Register a CLI session ID as managed by NOVA
 #[tauri::command]
 async fn track_session(session_id: String) -> Result<(), String> {
     // Defense-in-depth: never persist desk-generated temporary IDs
@@ -2885,7 +2914,7 @@ async fn track_session(session_id: String) -> Result<(), String> {
     let path = tracked_sessions_path();
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create .tokenicode dir: {}", e))?;
+            .map_err(|e| format!("Failed to create .nova dir: {}", e))?;
     }
     use std::io::Write;
     let mut file = std::fs::OpenOptions::new()
@@ -2983,7 +3012,7 @@ async fn list_sessions() -> Result<Vec<Value>, String> {
         return Ok(vec![]);
     }
 
-    // Only show sessions tracked by TOKENICODE
+    // Only show sessions tracked by NOVA
     let tracked = load_tracked_sessions();
 
     let mut sessions = vec![];
@@ -2997,7 +3026,7 @@ async fn list_sessions() -> Result<Vec<Value>, String> {
                             if let Some(name) = path.file_stem() {
                                 let id = name.to_string_lossy().to_string();
 
-                                // Skip sessions not created by TOKENICODE
+                                // Skip sessions not created by NOVA
                                 if !tracked.contains(&id) {
                                     continue;
                                 }
@@ -4517,22 +4546,22 @@ async fn save_temp_file(
     // Falls back to system temp if cwd is not set.
     let tmp = if let Some(ref dir) = cwd {
         let p = std::path::PathBuf::from(dir)
-            .join(".tokenicode")
+            .join(".nova")
             .join("tmp");
         if std::fs::create_dir_all(&p).is_ok() {
-            // Ensure .tokenicode is gitignored in user's project
+            // Ensure .nova is gitignored in user's project
             let gitignore = std::path::PathBuf::from(dir)
-                .join(".tokenicode")
+                .join(".nova")
                 .join(".gitignore");
             if !gitignore.exists() {
                 let _ = std::fs::write(&gitignore, "*\n");
             }
             p
         } else {
-            std::env::temp_dir().join("tokenicode")
+            std::env::temp_dir().join("nova")
         }
     } else {
-        std::env::temp_dir().join("tokenicode")
+        std::env::temp_dir().join("nova")
     };
     std::fs::create_dir_all(&tmp).map_err(|e| format!("Failed to create temp dir: {}", e))?;
 
@@ -5212,7 +5241,7 @@ async fn toggle_skill_enabled(
 ///
 /// **Why this exists**: macOS ships `/usr/bin/git` as a shim. When Xcode Command Line Tools
 /// (CLT) are not installed, running `/usr/bin/git` spawns a **GUI dialog** asking the user to
-/// install CLT. TOKENICODE calls git for snapshot/rewind on every message, so this popup
+/// install CLT. NOVA calls git for snapshot/rewind on every message, so this popup
 /// would appear repeatedly.
 ///
 /// Strategy:
@@ -6768,7 +6797,7 @@ fn inject_unix_shell_path(dir: &str) {
         None => return,
     };
     let export_line = format!("export PATH=\"{}:$PATH\"", dir);
-    let marker = "# Added by TOKENICODE";
+    let marker = "# Added by NOVA";
     let block = format!("\n{}\n{}\n", marker, export_line);
 
     let profiles = [
@@ -7708,10 +7737,10 @@ async fn check_claude_auth() -> Result<AuthStatus, String> {
     }
 }
 
-/// Path to the session-names metadata file (~/.claude/tokenicode_session_names.json).
+/// Path to the session-names metadata file (~/.claude/nova_session_names.json).
 fn session_names_path() -> Result<std::path::PathBuf, String> {
     let home = dirs::home_dir().ok_or("Cannot find home dir")?;
-    Ok(home.join(".claude").join("tokenicode_session_names.json"))
+    Ok(home.join(".claude").join("nova_session_names.json"))
 }
 
 /// Load custom session display names from disk.
@@ -7735,12 +7764,12 @@ async fn save_custom_previews(data: Value) -> Result<(), String> {
     std::fs::write(&path, content).map_err(|e| format!("Failed to write session names: {}", e))
 }
 
-fn tokenicode_data_path(filename: &str) -> Result<std::path::PathBuf, String> {
+fn nova_data_path(filename: &str) -> Result<std::path::PathBuf, String> {
     let home = dirs::home_dir().ok_or("Cannot find home dir")?;
-    let dir = home.join(".tokenicode");
+    let dir = home.join(".nova");
     if !dir.exists() {
         std::fs::create_dir_all(&dir)
-            .map_err(|e| format!("Failed to create .tokenicode dir: {}", e))?;
+            .map_err(|e| format!("Failed to create .nova dir: {}", e))?;
     }
     Ok(dir.join(filename))
 }
@@ -7748,7 +7777,7 @@ fn tokenicode_data_path(filename: &str) -> Result<std::path::PathBuf, String> {
 /// Load pinned session IDs from disk.
 #[tauri::command]
 async fn load_pinned_sessions() -> Result<Value, String> {
-    let path = tokenicode_data_path("pinned.json")?;
+    let path = nova_data_path("pinned.json")?;
     if !path.exists() {
         return Ok(serde_json::json!([]));
     }
@@ -7760,7 +7789,7 @@ async fn load_pinned_sessions() -> Result<Value, String> {
 /// Save pinned session IDs to disk.
 #[tauri::command]
 async fn save_pinned_sessions(data: Value) -> Result<(), String> {
-    let path = tokenicode_data_path("pinned.json")?;
+    let path = nova_data_path("pinned.json")?;
     let content = serde_json::to_string_pretty(&data)
         .map_err(|e| format!("Failed to serialize pinned sessions: {}", e))?;
     std::fs::write(&path, content).map_err(|e| format!("Failed to write pinned sessions: {}", e))
@@ -7769,7 +7798,7 @@ async fn save_pinned_sessions(data: Value) -> Result<(), String> {
 /// Load archived session IDs from disk.
 #[tauri::command]
 async fn load_archived_sessions() -> Result<Value, String> {
-    let path = tokenicode_data_path("archived.json")?;
+    let path = nova_data_path("archived.json")?;
     if !path.exists() {
         return Ok(serde_json::json!([]));
     }
@@ -7781,7 +7810,7 @@ async fn load_archived_sessions() -> Result<Value, String> {
 /// Save archived session IDs to disk.
 #[tauri::command]
 async fn save_archived_sessions(data: Value) -> Result<(), String> {
-    let path = tokenicode_data_path("archived.json")?;
+    let path = nova_data_path("archived.json")?;
     let content = serde_json::to_string_pretty(&data)
         .map_err(|e| format!("Failed to serialize archived sessions: {}", e))?;
     std::fs::write(&path, content).map_err(|e| format!("Failed to write archived sessions: {}", e))

@@ -55,6 +55,7 @@
     nsExec::ExecToLog '"$INSTDIR\cleanup-helper.exe"'
   ${Else}
     ; 独立 helper 不存在时，内联清理
+    ; Clean old TOKENICODE data dir (backward compat) and new NOVA data dir
     RMDir /r "$LOCALAPPDATA\com.tinyzhuang.tokenicode"
     RMDir /r "$APPDATA\com.nova.app"
     RMDir /r "$LOCALAPPDATA\com.nova.claude-code"

@@ -9,8 +9,9 @@ import { ProviderTab } from './ProviderTab';
 import { CliTab } from './CliTab';
 import { McpTab } from './McpTab';
 import { FeedbackTab } from './FeedbackTab';
+import { BackgroundPanel } from './BackgroundPanel';
 
-type SettingsTab = 'general' | 'provider' | 'cli' | 'mcp' | 'feedback';
+type SettingsTab = 'general' | 'provider' | 'cli' | 'mcp' | 'feedback' | 'background';
 
 const TAB_ICONS: Record<SettingsTab, React.ReactNode> = {
   general: (
@@ -46,6 +47,12 @@ const TAB_ICONS: Record<SettingsTab, React.ReactNode> = {
       <path d="M5 6.5h6M5 9h4" />
     </svg>
   ),
+  background: (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <rect x="1" y="1" width="14" height="14" rx="2" />
+      <path d="M1 6h14M6 1v14" />
+    </svg>
+  ),
 };
 
 const TAB_ITEMS: { id: SettingsTab; labelKey: string }[] = [
@@ -53,6 +60,7 @@ const TAB_ITEMS: { id: SettingsTab; labelKey: string }[] = [
   { id: 'provider', labelKey: 'settings.tab.provider' },
   { id: 'cli', labelKey: 'settings.tab.cli' },
   { id: 'mcp', labelKey: 'settings.tab.mcp' },
+  { id: 'background', labelKey: 'settings.tab.background' },
   { id: 'feedback', labelKey: 'settings.tab.feedback' },
 ];
 
@@ -132,6 +140,7 @@ export function SettingsPanel() {
             {activeTab === 'provider' && <ProviderTab />}
             {activeTab === 'cli' && <CliTab />}
             {activeTab === 'mcp' && <McpTab />}
+            {activeTab === 'background' && <BackgroundPanel />}
             {activeTab === 'feedback' && <FeedbackTab />}
           </div>
         </div>

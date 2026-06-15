@@ -1,5 +1,5 @@
 [package]
-name = "tokenicode"
+name = "nova"
 version = "2.2.1"
 description = "NOVA - Claude Code Desktop GUI"
 authors = ["NOVA"]
@@ -7,7 +7,7 @@ license = "Apache-2.0"
 edition = "2021"
 
 [lib]
-name = "tokenicode_lib"
+name = "nova_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

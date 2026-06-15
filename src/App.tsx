@@ -8,6 +8,7 @@ import { SettingsPanel } from './components/settings/SettingsPanel';
 import { ImageLightbox } from './components/shared/ImageLightbox';
 import { ChangelogModal } from './components/shared/ChangelogModal';
 import { Toast } from './components/shared/Toast';
+import { WelcomeScreen } from './components/WelcomeScreen';
 import { useSettingsStore } from './stores/settingsStore';
 import { useProviderStore } from './stores/providerStore';
 import { useFileStore } from './stores/fileStore';
@@ -24,19 +25,19 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import './App.css';
 
 /** Render the NOVA app icon SVG as base64 PNG for macOS Dock.
- *  Diamond-N logo: dark bg (#080c14), rotated square (stroke #00a8e8) with N inside. */
+ *  羊皮书主题: 米白底 (#faf6f0), 暗金菱形框和N字 (#b8860b). */
 function renderIconPng(_accentColor?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const size = 512;
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 512 512">
-<rect width="512" height="512" fill="#080c14"/>
+<rect width="512" height="512" fill="#faf6f0"/>
 <g transform="translate(256,256)">
   <rect x="-100" y="-100" width="200" height="200" rx="0"
-    fill="none" stroke="#00a8e8" stroke-width="8"
+    fill="none" stroke="#b8860b" stroke-width="8"
     transform="rotate(45)"/>
   <text x="0" y="35" text-anchor="middle"
     font-family="monospace" font-size="120" font-weight="700"
-    fill="#00a8e8">N</text>
+    fill="#b8860b">N</text>
 </g>
 </svg>`;
     const blob = new Blob([svg], { type: 'image/svg+xml' });
@@ -71,6 +72,7 @@ async function updateDockIcon() {
 
 function App() {
   const theme = useSettingsStore((s) => s.theme);
+  const colorTheme = useSettingsStore((s) => s.colorTheme);
   const fontSize = useSettingsStore((s) => s.fontSize);
   const settingsOpen = useSettingsStore((s) => s.settingsOpen);
   const workingDirectory = useSettingsStore((s) => s.workingDirectory);
@@ -111,10 +113,10 @@ function App() {
     import('tauri-plugin-mcp').then(({ setupPluginListeners }) => {
       setupPluginListeners();
     }).catch((error) => {
-      console.warn('[TOKENICODE] Failed to init MCP plugin listeners:', error);
+      console.warn('[NOVA] Failed to init MCP plugin listeners:', error);
     });
 
-    (window as any).__tokenicode_test = {
+    (window as any).__nova_test = {
       getMessages(optsOrTabId?: string | { tabId?: string; last?: number; summary?: boolean }) {
         const opts = typeof optsOrTabId === 'string' ? { tabId: optsOrTabId } : (optsOrTabId || {});
         const id = opts.tabId || useSessionStore.getState().selectedSessionId;
@@ -144,7 +146,7 @@ function App() {
         return { messages, total };
       },
       getLastMessage(tabId?: string) {
-        const { messages } = (window as any).__tokenicode_test.getMessages({ tabId, last: 1 });
+        const { messages } = (window as any).__nova_test.getMessages({ tabId, last: 1 });
         return messages[0] || null;
       },
       getActiveSessionId() {
@@ -188,20 +190,20 @@ function App() {
           active,
           phase: phase || null,
           sessionStatus: tab?.sessionStatus || null,
-          pendingPermission: !!(window as any).__tokenicode_respond_permission,
+          pendingPermission: !!(window as any).__nova_respond_permission,
           settingsOpen: useSettingsStore.getState().settingsOpen,
           messageCount: tab?.messages?.length || 0,
         };
       },
       type(text: string) {
-        const editor = (window as any).__tokenicode_editor;
+        const editor = (window as any).__nova_editor;
         if (!editor) return { error: 'Editor not available (no active session)' };
         editor.commands.clearContent();
         editor.commands.insertContent(text);
         return { typed: text };
       },
       send() {
-        const fn = (window as any).__tokenicode_send;
+        const fn = (window as any).__nova_send;
         if (!fn) return { error: 'Send handler not available' };
         fn();
         return { sent: true };
@@ -332,13 +334,13 @@ function App() {
         return { error: `Tab ${tabId} not found` };
       },
       allowPermission() {
-        const fn = (window as any).__tokenicode_respond_permission;
+        const fn = (window as any).__nova_respond_permission;
         if (!fn) return { error: 'No pending permission request' };
         fn(true);
         return { allowed: true };
       },
       denyPermission() {
-        const fn = (window as any).__tokenicode_respond_permission;
+        const fn = (window as any).__nova_respond_permission;
         if (!fn) return { error: 'No pending permission request' };
         fn(false);
         return { denied: true };
@@ -363,7 +365,7 @@ function App() {
     };
 
     return () => {
-      delete (window as any).__tokenicode_test;
+      delete (window as any).__nova_test;
     };
   }, []);
 
@@ -425,7 +427,7 @@ function App() {
                 }
               }
             } catch (err) {
-              console.warn('[TOKENICODE:close] stream flush failed', err);
+              console.warn('[NOVA:close] stream flush failed', err);
             }
             const { exit } = await import('@tauri-apps/plugin-process');
             await exit(0);
@@ -446,7 +448,7 @@ function App() {
       if (!activeIds.length) return;
       const orphaned = activeIds.filter((id) => !hasRecoverableFrontendSession(id));
       for (const id of orphaned) {
-        console.log('[TOKENICODE:cleanup] killing orphaned process:', id);
+        console.log('[NOVA:cleanup] killing orphaned process:', id);
         const ownerTabId = useSessionStore.getState().getTabForStdin(id);
         bridge.killSession(id).catch(() => {});
         useSessionStore.getState().unregisterStdinTab(id);
@@ -466,7 +468,7 @@ function App() {
     const isMac = navigator.userAgent.includes('Mac');
     if (!isMac) return;
     // Skip if user previously dismissed the dialog
-    if (localStorage.getItem('tokenicode-perm-dismissed')) return;
+    if (localStorage.getItem('nova-perm-dismissed')) return;
     bridge.checkFileAccess('/Users').then((ok) => {
       if (!ok) setShowPermDialog(true);
     }).catch(() => {});
@@ -547,6 +549,16 @@ function App() {
       return () => mq.removeEventListener('change', apply);
     }
   }, [theme]);
+
+  // Apply parchment color theme class to document root
+  useEffect(() => {
+    const root = document.documentElement;
+    if (colorTheme === 'parchment') {
+      root.classList.add('parchment');
+    } else {
+      root.classList.remove('parchment');
+    }
+  }, [colorTheme]);
 
   // Update macOS dock icon with NOVA branding
   useEffect(() => {
@@ -682,11 +694,21 @@ function App() {
 
   return (
     <>
-      <AppShell
-        sidebar={<Sidebar />}
-        main={<ChatPanel key={selectedSessionId || 'new'} />}
-        secondary={<SecondaryPanel />}
-      />
+      {selectedSessionId ? (
+        <AppShell
+          sidebar={<Sidebar />}
+          main={<ChatPanel key={selectedSessionId} />}
+          secondary={<SecondaryPanel />}
+        />
+      ) : (
+        <div className="h-full flex flex-col bg-bg-primary">
+          <WelcomeScreen onNewSession={() => {
+            const newId = `desk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            useSessionStore.getState().setSelectedSession(newId);
+            useChatStore.getState().restoreFromCache(newId);
+          }} />
+        </div>
+      )}
       <CommandPalette />
       {settingsOpen && <SettingsPanel />}
       <ImageLightbox />
@@ -725,7 +747,7 @@ function App() {
             <div className="px-6 py-4 flex items-center justify-end gap-2">
               <button
                 onClick={() => {
-                  localStorage.setItem('tokenicode-perm-dismissed', '1');
+                  localStorage.setItem('nova-perm-dismissed', '1');
                   setShowPermDialog(false);
                 }}
                 className="px-4 py-2 rounded-lg text-xs font-medium
@@ -736,7 +758,7 @@ function App() {
               </button>
               <button
                 onClick={() => {
-                  localStorage.setItem('tokenicode-perm-dismissed', '1');
+                  localStorage.setItem('nova-perm-dismissed', '1');
                   openUrl('x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles');
                   setShowPermDialog(false);
                 }}
@@ -751,6 +773,44 @@ function App() {
         </div>
       )}
       <Toast />
+
+      {/* 上下文消耗警告横幅 */}
+      {selectedSessionId && (() => {
+        const tab = useChatStore.getState().getTab(selectedSessionId);
+        const meta = tab?.sessionMeta;
+        const totalInput = meta?.totalInputTokens || 0;
+        const turns = meta?.turns || 0;
+        const CONTEXT_WINDOW = 1_000_000;
+        const WARNING_THRESHOLD = 0.8;
+        const TURN_COUNT_THRESHOLD = 45;
+        const tokenPercent = totalInput > 0
+          ? Math.round((totalInput / CONTEXT_WINDOW) * 100)
+          : 0;
+        const tokenWarn = totalInput > CONTEXT_WINDOW * WARNING_THRESHOLD;
+        const turnWarn = totalInput === 0 && turns > TURN_COUNT_THRESHOLD;
+        const shouldWarn = tokenWarn || turnWarn;
+        if (!shouldWarn) return null;
+        const displayPercent = tokenWarn ? tokenPercent : Math.round((turns / 60) * 100);
+        const warnMsg = tokenWarn
+          ? `上下文已用 ${displayPercent}%（${Math.round(totalInput / 1000)}K / 1M tokens），建议保存进度后重启会话`
+          : `对话已进行 ${turns} 轮，上下文已用约 ${displayPercent}%，建议保存进度后重启会话`;
+        return (
+          <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[9998]
+            px-4 py-2 rounded-xl bg-yellow-500/10 border border-yellow-500/30
+            backdrop-blur-sm shadow-lg
+            flex items-center gap-2.5 animate-fade-in max-w-lg">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+              stroke="currentColor" strokeWidth="1.5"
+              className="text-yellow-500 flex-shrink-0">
+              <path d="M8 1.5L1.5 13h13L8 1.5z" />
+              <path d="M8 6v3M8 11.5v.5" />
+            </svg>
+            <span className="text-xs text-yellow-600 dark:text-yellow-400 flex-1">
+              {warnMsg}
+            </span>
+          </div>
+        );
+      })()}
     </>
   );
 }

@@ -53,19 +53,19 @@ export function SessionGroup({
   selectedId,
   runningSessions,
   pinnedSessions,
-  archivedSessions,
+  archivedSessions: _archivedSessions,
   customPreviews,
-  multiSelect,
-  selectedIds,
+  multiSelect: _multiSelect,
+  selectedIds: _selectedIds,
   onToggleCollapse,
-  onContextMenu,
+  onContextMenu: _onContextMenu,
   onProjectContextMenu,
   onLoadSession,
-  onRename,
+  onRename: _onRename,
   onNewSession,
-  onToggleCheck,
-  renamingSessionId,
-  onRenameDone,
+  onToggleCheck: _onToggleCheck,
+  renamingSessionId: _renamingSessionId,
+  onRenameDone: _onRenameDone,
 }: SessionGroupProps) {
   const t = useT();
 
@@ -172,17 +172,8 @@ export function SessionGroup({
                   session={session}
                   isSelected={selectedId === session.id}
                   isRunning={runningSessions.has(session.id)}
-                  isPinned={true}
-                  isArchived={archivedSessions.has(session.id)}
                   displayName={getDisplayName(session)}
-                  multiSelect={multiSelect}
-                  isChecked={selectedIds.has(session.id)}
                   onSelect={onLoadSession}
-                  onContextMenu={onContextMenu}
-                  onRename={onRename}
-                  onToggleCheck={onToggleCheck}
-                  triggerRename={renamingSessionId === session.id}
-                  onRenameDone={onRenameDone}
                 />
               ))}
               {dateGroups.length > 0 && (
@@ -204,17 +195,8 @@ export function SessionGroup({
                   session={session}
                   isSelected={selectedId === session.id}
                   isRunning={runningSessions.has(session.id)}
-                  isPinned={false}
-                  isArchived={archivedSessions.has(session.id)}
                   displayName={getDisplayName(session)}
-                  multiSelect={multiSelect}
-                  isChecked={selectedIds.has(session.id)}
                   onSelect={onLoadSession}
-                  onContextMenu={onContextMenu}
-                  onRename={onRename}
-                  onToggleCheck={onToggleCheck}
-                  triggerRename={renamingSessionId === session.id}
-                  onRenameDone={onRenameDone}
                 />
               ))}
             </div>

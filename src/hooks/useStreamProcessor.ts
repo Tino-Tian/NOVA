@@ -1286,10 +1286,14 @@ export function useStreamProcessor(config: StreamProcessorConfig) {
           const resultOutput = msg.usage?.output_tokens || 0;
           const streamedInput = prevMeta?.inputTokens || 0;
           const streamedOutput = prevMeta?.outputTokens || 0;
+          // 回退轮数计数：如果 CLI 不提供 num_turns，用本地计数
+          const bgFallbackTurns = msg.num_turns != null
+            ? msg.num_turns
+            : (prevMeta?.turns || 0) + 1;
           store.setSessionMeta(tabId, {
             cost: msg.total_cost_usd,
             duration: msg.duration_ms,
-            turns: msg.num_turns,
+            turns: bgFallbackTurns,
             inputTokens: resultInput,
             outputTokens: resultOutput,
             totalInputTokens: (prevMeta?.totalInputTokens || 0) + (resultInput - streamedInput),
@@ -2767,10 +2771,14 @@ export function useStreamProcessor(config: StreamProcessorConfig) {
           const resultOutput = msg.usage?.output_tokens || 0;
           const streamedInput = meta.inputTokens || 0;
           const streamedOutput = meta.outputTokens || 0;
+          // 回退轮数计数：如果 CLI 不提供 num_turns，用本地计数
+          const fallbackTurns = msg.num_turns != null
+            ? msg.num_turns
+            : (meta.turns || 0) + 1;
           setSessionMeta({
             cost: msg.total_cost_usd,
             duration: msg.duration_ms,
-            turns: msg.num_turns,
+            turns: fallbackTurns,
             inputTokens: resultInput,
             outputTokens: resultOutput,
             totalInputTokens: (meta.totalInputTokens || 0) + (resultInput - streamedInput),
@@ -3062,11 +3070,11 @@ export function useStreamProcessor(config: StreamProcessorConfig) {
         // Desktop notification
         if (!document.hasFocus() && 'Notification' in window) {
           if (Notification.permission === 'granted') {
-            new Notification('TOKENICODE', { body: t('notification.chatComplete') });
+            new Notification('NOVA', { body: t('notification.chatComplete') });
           } else if (Notification.permission === 'default') {
             Notification.requestPermission().then((perm) => {
               if (perm === 'granted') {
-                new Notification('TOKENICODE', { body: t('notification.chatComplete') });
+                new Notification('NOVA', { body: t('notification.chatComplete') });
               }
             }).catch(() => {});
           }

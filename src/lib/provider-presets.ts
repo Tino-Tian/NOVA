@@ -142,4 +142,18 @@ export const PROVIDER_PRESETS: PresetProvider[] = [
       haiku: 'mimo-v2-pro',
     },
   },
+  {
+    id: 'zhipu',
+    name: '智谱 GLM',
+    baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+    apiFormat: 'anthropic',
+    extra_env: {},
+    keyUrl: 'https://bigmodel.cn/usercenter/proj-mgmt/apikeys',
+    thinkingSupport: 'full',
+    defaultModels: {
+      opus: 'glm-5',
+      sonnet: 'glm-5-turbo',
+      haiku: 'glm-4.7',
+    },
+  },
 ];

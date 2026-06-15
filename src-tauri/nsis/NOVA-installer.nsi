@@ -15,8 +15,8 @@
 ;
 ; 数据目录映射（与 Tauri/Rust 代码一致）:
 ;   安装目录:       $LOCALAPPDATA\NOVA
-;   应用数据:       $LOCALAPPDATA\com.tinyzhuang.tokenicode
-;   安全数据(设置): %USERPROFILE%\.tokenicode
+;   应用数据:       $LOCALAPPDATA\com.nova.claude-code
+;   安全数据(设置): %USERPROFILE%\.nova
 ;   Claude 项目:    %USERPROFILE%\.claude\projects\  (不删除)
 ;   WebView2 数据:  %APPDATA%\com.nova.app\
 ;   WebView2 Runtime: 系统级安装，不删除
@@ -30,8 +30,8 @@ ManifestDPIAware true
 !define APP_EXE "NOVA.exe"
 !define APP_CLI_EXE "claude.exe"
 !define APP_PUBLISHER "NOVA Team"
-!define APP_URL "https://github.com/yiliqi78/TOKENICODE"
-!define APP_DATA_DIR "com.tinyzhuang.tokenicode"
+!define APP_URL "https://github.com/Tino-Tian/NOVA"
+!define APP_DATA_DIR "com.nova.claude-code"
 !define APP_REG_KEY "Software\${APP_PUBLISHER}\${APP_NAME}"
 
 ; ================================================================
@@ -95,7 +95,7 @@ Section "Install"
     WriteRegDWORD HKCU "${APP_REG_KEY}" "EstimatedSize" "$0"
 
     ; 3. 添加到用户级 PATH 环境变量（使用 EnVar 插件）
-    ;    CLI bin 目录: %LOCALAPPDATA%\com.tinyzhuang.tokenicode\cli
+    ;    CLI bin 目录: %LOCALAPPDATA%\com.nova.claude-code\cli
     ;    这样用户可以在命令行直接运行 claude
     StrCpy $0 "$LOCALAPPDATA\${APP_DATA_DIR}\cli"
     ${If} ${FileExists} "$0\${APP_CLI_EXE}"
@@ -190,9 +190,9 @@ Section "Uninstall"
     ${EndIf}
 
     ; ---- 步骤 3: 调用独立清理工具处理用户数据 ----
-    ;    清理: %LOCALAPPDATA%\com.tinyzhuang.tokenicode
+    ;    清理: %LOCALAPPDATA%\com.nova.claude-code
     ;    清理: %APPDATA%\com.nova.app (WebView2 数据)
-    ;    保留: %USERPROFILE%\.tokenicode (用户设置)
+    ;    保留: %USERPROFILE%\.nova (用户设置)
     ;    保留: %USERPROFILE%\.claude\projects (Claude 项目数据，用户没要求删)
     DetailPrint "正在清理用户数据目录..."
 
